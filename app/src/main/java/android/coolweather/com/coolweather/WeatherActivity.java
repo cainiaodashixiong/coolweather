@@ -1,8 +1,10 @@
 package android.coolweather.com.coolweather;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.coolweather.com.coolweather.gson.Forecast;
 import android.coolweather.com.coolweather.gson.Weather;
+import android.coolweather.com.coolweather.service.AutoUpdateService;
 import android.coolweather.com.coolweather.util.HttpUtil;
 import android.coolweather.com.coolweather.util.Utility;
 import android.graphics.Color;
@@ -95,20 +97,25 @@ public class WeatherActivity extends AppCompatActivity {
         Log.d(TAG,"zps+weatherString"+weatherString);
         if (weatherString!=null){
             //有缓存时直接解析天气数据
+            Log.d("zhang","有没有缓存:"+weatherString);
             Weather weather= Utility.handleWeatherResponse(weatherString);
             weatherId=weather.basic.weatherId;
+            Log.d("zhang","有没有缓存:"+weatherId+" "+weatherString);
             showWeatherInfo(weather);
         }else {
             //无缓存时查询服务器天气
+
             weatherId=getIntent().getStringExtra("weather_id");
-            Log.d(TAG,"zps:weatherid:"+weatherId);
+            Log.d("zhang","没有缓存:"+weatherId);
             weatherLayout.setVisibility(View.INVISIBLE);
             requestWeather(weatherId);
         }
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
+                Log.d(TAG,"weatherId:"+weatherId);
                 requestWeather(weatherId);
+
             }
         });
         bingPicImg=findViewById(R.id.bing_pic_img);
@@ -161,7 +168,6 @@ public class WeatherActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 final String responseText=response.body().string();
                 final Weather weather=Utility.handleWeatherResponse(responseText);
-                Log.d(TAG,"zps:weatherid:"+weather+"   status:"+weather.status);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -170,8 +176,10 @@ public class WeatherActivity extends AppCompatActivity {
                                     getDefaultSharedPreferences(WeatherActivity.this).edit();
                             editor.putString("weather",responseText);
                             editor.apply();
-                            Log.d(TAG,"zps:weather:"+weather.basic.cityName+"   responseText:"+responseText);
+                            Log.d("zhang","zps:weather:"+weather.basic.cityName+"   responseText:"+responseText);
                             showWeatherInfo(weather);
+                            Intent intent=new Intent(WeatherActivity.this, AutoUpdateService.class);
+                            startService(intent);
                         }else {
                             Toast.makeText(WeatherActivity.this,"获取天气信息失败",
                                     Toast.LENGTH_SHORT).show();
@@ -214,7 +222,6 @@ public class WeatherActivity extends AppCompatActivity {
             maxText=view.findViewById(R.id.max_text);
             minText=view.findViewById(R.id.min_text);
 
-            Log.d("zps123",forecast.date);
             dateText.setText(forecast.date);
             infoText.setText(forecast.more.info);
             maxText.setText(forecast.temperature.max+"℃");
@@ -231,7 +238,6 @@ public class WeatherActivity extends AppCompatActivity {
         comfortText.setText(comfort);
         carWashText.setText(carWash);
         sportText.setText(sport);
-        Log.d(TAG,"zps:sport:"+sport);
         weatherLayout.setVisibility(View.VISIBLE);
     }
 }
